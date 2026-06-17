@@ -1,0 +1,1 @@
+go build -o integration_tests ./cmd

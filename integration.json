@@ -1,0 +1,55 @@
+{
+  "baseURL": "http://localhost:8070",
+  "cases": [
+    {
+      "name": "heathcheck_test",
+      "request": {
+        "method": "get",
+        "url": "/api/v1/health",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {}
+      },
+      "extract": {},
+      "asserts": {
+        "statusCode": 200,
+        "equals": {
+            "status": "ok"
+            }
+        }
+    },
+    {
+      "name": "create_log_test",
+      "request": {
+        "method": "post",
+        "url": "/api/v1/log",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "service": "auth",
+          "level": "error",
+          "message": "enter error",
+          "timestamp": "2026-05-27T12:30:00Z",
+          "metadata": {
+            "user_id": "123"
+          }
+        }
+      },
+      "extract": {
+        "logId": "data.id"
+      },
+      "asserts": {
+        "statusCode": 200,
+        "equals": {
+          "success": true,
+          "data.status": "created"
+        },
+        "exists": [
+          "data.id"
+        ]
+      }
+    }
+  ]
+}
