@@ -24,7 +24,7 @@ func (r *Request) Send(ctx *TestContext, url string) (*http.Response, time.Durat
 	}
 
 	if err != nil {
-		fmt.Printf("Ошибка создания запроса %v\n", err.Error())
+		fmt.Printf("Error create request %v\n", err.Error())
 		return nil, 0, err
 	}
 
@@ -35,7 +35,7 @@ func (r *Request) Send(ctx *TestContext, url string) (*http.Response, time.Durat
 	resp, err := client.Do(req)
 
 	if err != nil {
-		fmt.Printf("Ошибка выполнения запроса %v\n", err.Error())
+		fmt.Printf("Error exec request %v\n", err.Error())
 		return nil, 0, err
 	}
 

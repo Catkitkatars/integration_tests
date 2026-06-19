@@ -3,6 +3,14 @@ package tests
 import (
 	"fmt"
 	"reflect"
+
+	"github.com/tidwall/gjson"
+)
+
+const (
+	StatusCodeCheckType = "statusCode"
+	EqualsCheckType     = "equals"
+	ExistsCheckType     = "exists"
 )
 
 type Assert struct {
@@ -11,64 +19,120 @@ type Assert struct {
 	Exists     []string       `json:"exists"`
 }
 
-func (a *Assert) Check(resp *Response) []error {
-	assertErrors := make([]error, 0)
+type AssertResult struct {
+	Success  bool            `json:"success"`
+	Failures []AssertFailure `json:"failures"`
+}
+
+type AssertFailure struct {
+	Type     string `json:"type"`
+	Path     string `json:"path"`
+	Expected any    `json:"expected"`
+	Actual   any    `json:"actual"`
+	Message  string `json:"message"`
+}
+
+func (a *Assert) Check(resp *Response) *AssertResult {
+	success := true
+	var result []AssertFailure
 
 	if a.StatusCode != 0 {
-		if err := a.checkStatus(resp); err != nil {
-			assertErrors = append(assertErrors, err)
+		if failures := a.checkStatus(resp); failures != nil {
+			result = append(result, failures...)
+			success = false
 		}
 	}
 
 	if a.Equals != nil {
-		if errs := a.checkEquals(resp); len(errs) > 0 {
-			assertErrors = append(assertErrors, errs...)
+		if failures := a.checkEquals(resp); failures != nil {
+			result = append(result, failures...)
+			success = false
 		}
 	}
 
 	if len(a.Exists) > 0 {
-		if errs := a.checkExists(resp); len(errs) > 0 {
-			assertErrors = append(assertErrors, errs...)
+		if failures := a.checkExists(resp); failures != nil {
+			result = append(result, failures...)
+			success = false
 		}
 	}
 
-	return assertErrors
+	return &AssertResult{
+		Success:  success,
+		Failures: result,
+	}
 }
 
-func (a *Assert) checkStatus(resp *Response) error {
+func (a *Assert) checkStatus(resp *Response) []AssertFailure {
+	var failures []AssertFailure
 	if a.StatusCode != resp.StatusCode {
-		return fmt.Errorf("Assert status-code - %d !=  Response status-code %d", a.StatusCode, resp.StatusCode)
+		fail := AssertFailure{
+			Type:     StatusCodeCheckType,
+			Path:     "statusCode",
+			Expected: a.StatusCode,
+			Actual:   resp.StatusCode,
+			Message: fmt.Sprintf(
+				"failed: status-code - %d != Response status-code %d",
+				a.StatusCode,
+				resp.StatusCode,
+			),
+		}
+		failures = append(failures, fail)
 	}
 
-	return nil
+	return failures
 }
 
-func (a *Assert) checkEquals(resp *Response) []error {
-	errs := make([]error, 0)
+func (a *Assert) checkEquals(resp *Response) []AssertFailure {
+	var failures []AssertFailure
+
 	for path, expected := range a.Equals {
-		actual, err := GetByPath(resp.Body, path)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("equals failed: path %q not found: %w", path, err))
+		result := gjson.Get(resp.Body, path)
+
+		if !result.Exists() {
+			fail := AssertFailure{
+				Type:     EqualsCheckType,
+				Path:     path,
+				Expected: expected,
+				Actual:   result.Value(),
+				Message:  fmt.Sprintf("failed: path %q not found in body", path),
+			}
+			failures = append(failures, fail)
 			continue
 		}
 
-		if !reflect.DeepEqual(actual, expected) {
-			errs = append(errs, fmt.Errorf("equals failed: path %q expected %v, got %v", path, expected, actual))
+		if !reflect.DeepEqual(result.Value(), expected) {
+			fail := AssertFailure{
+				Type:     EqualsCheckType,
+				Path:     path,
+				Expected: expected,
+				Actual:   result.Value(),
+				Message:  fmt.Sprintf("failed: path %q expected %v, got %v", path, expected, result.Value()),
+			}
+
+			failures = append(failures, fail)
 		}
 	}
 
-	return errs
+	return failures
 }
 
-func (a *Assert) checkExists(resp *Response) []error {
-	errs := make([]error, 0)
+func (a *Assert) checkExists(resp *Response) []AssertFailure {
+	var failures []AssertFailure
 
 	for _, path := range a.Exists {
-		_, err := GetByPath(resp.Body, path)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("exists failed: path %q not found: %w", path, err))
+		if value := gjson.Get(resp.Body, path); !value.Exists() {
+			fail := AssertFailure{
+				Type:     ExistsCheckType,
+				Path:     path,
+				Expected: nil,
+				Actual:   nil,
+				Message:  fmt.Sprintf("failed: path %q not found", path),
+			}
+
+			failures = append(failures, fail)
 		}
 	}
 
-	return errs
+	return failures
 }
