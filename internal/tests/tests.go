@@ -15,16 +15,27 @@ type IntegrationTestsResult struct {
 	CaseResults []TestCaseResult
 }
 
-func (t *IntegrationTests) Run() {
+func (t *IntegrationTests) Run() *IntegrationTestsResult {
 	if len(t.Cases) != 0 {
+		var result IntegrationTestsResult
+
 		ctx := &TestContext{
 			Variables: make(map[string]any),
 		}
 
 		for _, testCase := range t.Cases {
-			result := testCase.Do(ctx, t.BaseURL)
+			caseResult := testCase.Do(ctx, t.BaseURL)
+			result.CaseResults = append(result.CaseResults, *caseResult)
+
+			if caseResult.Error != nil {
+				break
+			}
 		}
+
+		return &result
 	}
+
+	return nil
 }
 
 func LoadFrom(filename string) (IntegrationTests, error) {

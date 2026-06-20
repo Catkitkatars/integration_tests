@@ -9,6 +9,7 @@ type TestCase struct {
 
 type TestCaseResult struct {
 	Name          string         `json:"name"`
+	Success       bool           `json:"success"`
 	Error         error          `json:"error"`
 	Response      *Response      `json:"response"`
 	ExtractResult *ExtractResult `json:"extract-result"`
@@ -23,6 +24,7 @@ func (t *TestCase) Do(ctx *TestContext, baseURL string) *TestCaseResult {
 
 	if err != nil {
 		result.Error = err
+		result.Success = false
 		return &result
 	}
 
@@ -30,15 +32,29 @@ func (t *TestCase) Do(ctx *TestContext, baseURL string) *TestCaseResult {
 
 	if err != nil {
 		result.Error = err
+		result.Success = false
 		return &result
 	}
 
-	extractResult := t.Extract.Do(resp, t.Extract)
+	extractResult := t.Extract.Do(resp)
+
+	if !extractResult.Success {
+		result.Error = extractResult.Error
+		result.Success = false
+		return &result
+	}
+
 	ctx.SetMany(extractResult.Variables)
+
+	assertResult := t.Asserts.Check(resp)
+
+	if !assertResult.Success {
+		result.Success = false
+	}
 
 	result.Response = resp
 	result.ExtractResult = extractResult
-	result.AssertResult = t.Asserts.Check(resp)
+	result.AssertResult = assertResult
 
 	return &result
 }

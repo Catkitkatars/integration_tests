@@ -34,32 +34,32 @@ type AssertFailure struct {
 
 func (a *Assert) Check(resp *Response) *AssertResult {
 	success := true
-	var result []AssertFailure
+	var failures []AssertFailure
 
 	if a.StatusCode != 0 {
-		if failures := a.checkStatus(resp); failures != nil {
-			result = append(result, failures...)
+		if statusFailures := a.checkStatus(resp); len(statusFailures) > 0 {
+			failures = append(failures, statusFailures...)
 			success = false
 		}
 	}
 
 	if a.Equals != nil {
-		if failures := a.checkEquals(resp); failures != nil {
-			result = append(result, failures...)
+		if equalsFailures := a.checkEquals(resp); len(equalsFailures) > 0 {
+			failures = append(failures, equalsFailures...)
 			success = false
 		}
 	}
 
 	if len(a.Exists) > 0 {
-		if failures := a.checkExists(resp); failures != nil {
-			result = append(result, failures...)
+		if existsFailures := a.checkExists(resp); len(existsFailures) > 0 {
+			failures = append(failures, existsFailures...)
 			success = false
 		}
 	}
 
 	return &AssertResult{
 		Success:  success,
-		Failures: result,
+		Failures: failures,
 	}
 }
 
