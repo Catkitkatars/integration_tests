@@ -3,7 +3,7 @@ package report
 import (
 	"encoding/json"
 	"fmt"
-	"integrationstests/internal/tests"
+	"integrationstests/internal/app"
 	"io"
 )
 
@@ -11,7 +11,7 @@ type ConsoleReporter struct {
 	Writer io.Writer
 }
 
-func (r *ConsoleReporter) Report(result *tests.IntegrationTestsResult) {
+func (r *ConsoleReporter) Report(result *app.IntegrationTestsResult) {
 	for _, caseResult := range result.CaseResults {
 		fmt.Fprintf(r.Writer, "Case: %s\n", caseResult.Name)
 		if caseResult.Error != nil {
@@ -35,7 +35,7 @@ type JSONReporter struct {
 	Writer io.Writer
 }
 
-func (r *JSONReporter) Report(result *tests.IntegrationTestsResult) {
+func (r *JSONReporter) Report(result *app.IntegrationTestsResult) {
 	encoder := json.NewEncoder(r.Writer)
 	encoder.SetIndent("", "  ")
 

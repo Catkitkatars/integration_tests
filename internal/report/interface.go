@@ -1,7 +1,7 @@
 package report
 
-import "integrationstests/internal/tests"
+import "integrationstests/internal/app"
 
 type ReporterInterface interface {
-	Report(result *tests.IntegrationTestsResult)
+	Report(result *app.IntegrationTestsResult)
 }

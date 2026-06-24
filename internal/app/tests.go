@@ -1,4 +1,4 @@
-package tests
+package app
 
 import (
 	"encoding/json"
@@ -19,9 +19,7 @@ func (t *IntegrationTests) Run() *IntegrationTestsResult {
 	if len(t.Cases) != 0 {
 		var result IntegrationTestsResult
 
-		ctx := &TestContext{
-			Variables: make(map[string]any),
-		}
+		ctx := NewTestContext()
 
 		for _, testCase := range t.Cases {
 			caseResult := testCase.Do(ctx, t.BaseURL)
@@ -50,17 +48,23 @@ func LoadFrom(filename string) (IntegrationTests, error) {
 }
 
 type TestContext struct {
-	Variables map[string]any
+	variables map[string]any
 }
 
 func NewTestContext() *TestContext {
 	return &TestContext{
-		Variables: make(map[string]any),
+		variables: make(map[string]any),
 	}
 }
 
-func (c *TestContext) SetMany(vars map[string]any) {
+func (c *TestContext) SetManyVars(vars map[string]any) {
 	for name, value := range vars {
-		c.Variables[name] = value
+		c.variables[name] = value
 	}
+}
+
+func (c *TestContext) GetVarByKey(key string) (any, bool) {
+	v, ok := c.variables[key]
+
+	return v, ok
 }

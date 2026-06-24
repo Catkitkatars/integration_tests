@@ -1,4 +1,4 @@
-package tests
+package app
 
 type TestCase struct {
 	Name    string  `json:"name"`
@@ -19,8 +19,7 @@ type TestCaseResult struct {
 func (t *TestCase) Do(ctx *TestContext, baseURL string) *TestCaseResult {
 	var result TestCaseResult
 	result.Name = t.Name
-	url := baseURL + t.Request.URL
-	httpResp, respTime, err := t.Request.Send(ctx, url)
+	httpResp, respTime, err := t.Request.Send(ctx, baseURL)
 
 	if err != nil {
 		result.Error = err
@@ -44,7 +43,7 @@ func (t *TestCase) Do(ctx *TestContext, baseURL string) *TestCaseResult {
 		return &result
 	}
 
-	ctx.SetMany(extractResult.Variables)
+	ctx.SetManyVars(extractResult.Variables)
 
 	assertResult := t.Asserts.Check(resp)
 

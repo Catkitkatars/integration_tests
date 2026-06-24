@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
+	"integrationstests/internal/app"
 	"integrationstests/internal/report"
-	"integrationstests/internal/tests"
 	"os"
 )
 
 func main() {
-	tests, err := tests.LoadFrom("integration.json")
+	tests, err := app.LoadFrom("integration.json")
 	if err != nil {
 		panic(err)
 	}
@@ -22,11 +22,11 @@ func main() {
 		consoleReporter.Report(result)
 
 		file, err := os.Create("integration_result.json")
-		defer file.Close()
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
+		defer file.Close()
 		JSONReporter := &report.JSONReporter{
 			Writer: file,
 		}

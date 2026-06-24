@@ -1,4 +1,4 @@
-package tests
+package app
 
 import (
 	"bytes"
@@ -13,19 +13,26 @@ type Request struct {
 	Method  string            `json:"method"`
 	URL     string            `json:"url"`
 	Headers map[string]string `json:"headers"`
-	Body    any               `json:"body"`
+	Body    map[string]any    `json:"body"`
 }
 
-func (r *Request) Send(ctx *TestContext, url string) (*http.Response, time.Duration, error) {
-	req, err := http.NewRequest(strings.ToUpper(r.Method), url, r.normilizedBody())
-
-	for key, value := range r.Headers {
-		req.Header.Set(key, value)
+func (r *Request) Send(ctx *TestContext, baseURL string) (*http.Response, time.Duration, error) {
+	err := FindAndReplaceVars(ctx, r)
+	if err != nil {
+		return nil, 0, err
 	}
+
+	url := baseURL + r.URL
+
+	req, err := http.NewRequest(strings.ToUpper(r.Method), url, r.normilizedBody())
 
 	if err != nil {
 		fmt.Printf("Error create request %v\n", err.Error())
 		return nil, 0, err
+	}
+
+	for key, value := range r.Headers {
+		req.Header.Set(key, value)
 	}
 
 	client := &http.Client{}
