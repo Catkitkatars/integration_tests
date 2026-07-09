@@ -2,18 +2,24 @@ package main
 
 import (
 	"fmt"
-	"integrationstests/internal/app"
-	"integrationstests/internal/report"
+	"integrationstests/internal/app/input"
+	"integrationstests/internal/app/model"
+	"integrationstests/internal/app/report"
 	"os"
 )
 
 func main() {
-	tests, err := app.LoadFrom("integration.json")
+	data, err := input.LoadFrom("integration.json")
 	if err != nil {
 		panic(err)
 	}
 
-	result := tests.Run()
+	testCase, err := model.InitCase(data)
+	if err != nil {
+		panic(err)
+	}
+
+	result := testCase.Do()
 
 	if result != nil {
 		consoleReporter := &report.ConsoleReporter{

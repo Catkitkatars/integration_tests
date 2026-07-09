@@ -1,9 +1,12 @@
 {
-  "baseURL": "http://localhost:8070",
-  "cases": [
+  "desc":"some description",
+  "vars": {
+    "baseURL":"http://localhost:8070"
+  },
+  "steps": [
     {
       "name": "heathcheck_test",
-      "request": {
+      "rq": {
         "method": "get",
         "url": "/api/v1/health",
         "headers": {
@@ -16,12 +19,12 @@
         "statusCode": 200,
         "equals": {
             "status": "ok"
-            }
+          }
         }
     },
     {
       "name": "create_log_test",
-      "request": {
+      "rq": {
         "method": "post",
         "url": "/api/v1/log",
         "headers": {
