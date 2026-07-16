@@ -2,6 +2,8 @@ package model
 
 import (
 	"fmt"
+	"io"
+	"net/http"
 	"reflect"
 
 	"github.com/tidwall/gjson"
@@ -39,45 +41,50 @@ type AssertsResult struct {
 	Message  string `json:"message"`
 }
 
-type AssertFailure struct {
-}
-
-func (a *Asserts) Check(resp *Response) []*AssertsResult {
+func (a *Asserts) Check(resp *http.Response) ([]*AssertsResult, error) {
 	var failures []*AssertsResult
 
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("Asserts.Check(): error read resp.Body")
+	}
+	defer resp.Body.Close()
+
+	body := string(data)
+
 	if a.statusCode != 0 {
-		if statusFailures := a.checkStatus(resp); len(statusFailures) > 0 {
+		if statusFailures := a.checkStatus(resp.StatusCode); len(statusFailures) > 0 {
 			failures = append(failures, statusFailures...)
 		}
 	}
 
 	if a.equals != nil {
-		if equalsFailures := a.checkEquals(resp); len(equalsFailures) > 0 {
+		if equalsFailures := a.checkEquals(body); len(equalsFailures) > 0 {
 			failures = append(failures, equalsFailures...)
 		}
 	}
 
 	if len(a.exists) > 0 {
-		if existsFailures := a.checkExists(resp); len(existsFailures) > 0 {
+		if existsFailures := a.checkExists(body); len(existsFailures) > 0 {
 			failures = append(failures, existsFailures...)
 		}
 	}
 
-	return failures
+	return failures, nil
 }
 
-func (a *Asserts) checkStatus(resp *Response) []*AssertsResult {
+func (a *Asserts) checkStatus(statusCode int) []*AssertsResult {
 	var failures []*AssertsResult
-	if a.statusCode != resp.StatusCode {
+	if a.statusCode != statusCode {
 		fail := AssertsResult{
 			Type:     StatusCodeCheckType,
 			Path:     "statusCode",
 			Expected: a.statusCode,
-			Actual:   resp.StatusCode,
+			Actual:   statusCode,
 			Message: fmt.Sprintf(
 				"asserts failed: status-code - %d != Response status-code %d",
 				a.statusCode,
-				resp.StatusCode,
+				statusCode,
 			),
 		}
 		failures = append(failures, &fail)
@@ -86,11 +93,11 @@ func (a *Asserts) checkStatus(resp *Response) []*AssertsResult {
 	return failures
 }
 
-func (a *Asserts) checkEquals(resp *Response) []*AssertsResult {
+func (a *Asserts) checkEquals(body string) []*AssertsResult {
 	var failures []*AssertsResult
 
 	for path, expected := range a.equals {
-		result := gjson.Get(resp.Body, path)
+		result := gjson.Get(body, path)
 
 		if !result.Exists() {
 			fail := AssertsResult{
@@ -120,11 +127,11 @@ func (a *Asserts) checkEquals(resp *Response) []*AssertsResult {
 	return failures
 }
 
-func (a *Asserts) checkExists(resp *Response) []*AssertsResult {
+func (a *Asserts) checkExists(body string) []*AssertsResult {
 	var failures []*AssertsResult
 
 	for _, path := range a.exists {
-		if value := gjson.Get(resp.Body, path); !value.Exists() {
+		if value := gjson.Get(body, path); !value.Exists() {
 			fail := AssertsResult{
 				Type:     ExistsCheckType,
 				Path:     path,

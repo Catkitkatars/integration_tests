@@ -29,12 +29,15 @@ type StepData struct {
 	Asserts *AssertsData   `json:"asserts"`
 }
 
+// Нет смысла парсить body в map[string]any
 type RequestData struct {
-	Method  string            `json:"method"`
-	URL     string            `json:"url"`
-	Headers map[string]string `json:"headers"`
-	Body    map[string]any    `json:"body"`
+	Method  string `json:"method"`
+	URL     string `json:"url"`
+	Headers string `json:"headers"`
+	Body    string `json:"body"`
 }
+
+// Попробовать AssertsData map[string]any и парсить уже внутри функции конструктора
 
 type AssertsData struct {
 	StatusCode int            `json:"statusCode"`
